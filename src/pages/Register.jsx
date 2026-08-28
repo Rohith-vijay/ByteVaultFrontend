@@ -42,7 +42,7 @@ export const Register = () => {
 
     try {
       await register(name, email, password);
-      navigate("/", { replace: true });
+      navigate("/email-verification", { replace: true });
     } catch (err) {
       setFormError(err.message || "Registration failed.");
     } finally {

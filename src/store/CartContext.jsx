@@ -83,6 +83,9 @@ export const CartProvider = ({ children }) => {
       });
     }
     syncCart(updated);
+    window.dispatchEvent(new CustomEvent("bytevault_toast", {
+      detail: { message: `Added to cart!` }
+    }));
   };
 
   // Adjusts item quantities
@@ -104,6 +107,9 @@ export const CartProvider = ({ children }) => {
   const removeItem = (productId) => {
     const updated = cartItems.filter((item) => item.id !== productId);
     syncCart(updated);
+    window.dispatchEvent(new CustomEvent("bytevault_toast", {
+      detail: { message: `Removed from cart.` }
+    }));
   };
 
   // Empties cart

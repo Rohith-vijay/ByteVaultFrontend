@@ -18,6 +18,15 @@ const Checkout = lazy(() => import("../pages/Checkout"));
 const Account = lazy(() => import("../pages/Account"));
 const Login = lazy(() => import("../pages/Login"));
 const Register = lazy(() => import("../pages/Register"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword"));
+const EmailVerification = lazy(() => import("../pages/EmailVerification"));
+const OrderConfirmation = lazy(() => import("../pages/OrderConfirmation"));
+const OrderDetails = lazy(() => import("../pages/OrderDetails"));
+const WishlistPage = lazy(() => import("../pages/WishlistPage"));
+const InfoPages = lazy(() => import("../pages/InfoPages"));
+const NotFound = lazy(() => import("../pages/NotFound"));
+const Offline = lazy(() => import("../pages/Offline"));
 const DesignSystemPlayground = lazy(() => import("../pages/DesignSystemPlayground"));
 
 // Admin / Seller placeholder layouts
@@ -88,7 +97,18 @@ const AppRoutesContent = () => {
           <Route path="/catalog" element={<AppLayout><AnimatedPage><LazyPage Component={Catalog} /></AnimatedPage></AppLayout>} />
           <Route path="/products/:id" element={<AppLayout><AnimatedPage><LazyPage Component={ProductDetail} /></AnimatedPage></AppLayout>} />
           <Route path="/cart" element={<AppLayout><AnimatedPage><LazyPage Component={Cart} /></AnimatedPage></AppLayout>} />
+          <Route path="/wishlist" element={<AppLayout><AnimatedPage><LazyPage Component={WishlistPage} /></AnimatedPage></AppLayout>} />
           
+          {/* Informational Static Pages */}
+          <Route path="/about" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/faq" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/contact" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/terms" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/privacy" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/refund" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/refund-policy" element={<AppLayout><AnimatedPage><LazyPage Component={InfoPages} /></AnimatedPage></AppLayout>} />
+          <Route path="/offline" element={<AppLayout><AnimatedPage><LazyPage Component={Offline} /></AnimatedPage></AppLayout>} />
+
           {/* Guest Auth Views */}
           <Route 
             path="/login" 
@@ -103,6 +123,30 @@ const AppRoutesContent = () => {
             element={
               <PublicRoute>
                 <AppLayout><AnimatedPage><LazyPage Component={Register} /></AnimatedPage></AppLayout>
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <PublicRoute>
+                <AppLayout><AnimatedPage><LazyPage Component={ForgotPassword} /></AnimatedPage></AppLayout>
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/reset-password" 
+            element={
+              <PublicRoute>
+                <AppLayout><AnimatedPage><LazyPage Component={ResetPassword} /></AnimatedPage></AppLayout>
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/email-verification" 
+            element={
+              <PublicRoute>
+                <AppLayout><AnimatedPage><LazyPage Component={EmailVerification} /></AnimatedPage></AppLayout>
               </PublicRoute>
             } 
           />
@@ -121,6 +165,30 @@ const AppRoutesContent = () => {
             element={
               <ProtectedRoute>
                 <AppLayout><AnimatedPage><LazyPage Component={Account} /></AnimatedPage></AppLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/order-confirmation/:id" 
+            element={
+              <ProtectedRoute>
+                <AppLayout><AnimatedPage><LazyPage Component={OrderConfirmation} /></AnimatedPage></AppLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/orders" 
+            element={
+              <ProtectedRoute>
+                <Navigate to="/account?tab=orders" replace />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/orders/:id" 
+            element={
+              <ProtectedRoute>
+                <AppLayout><AnimatedPage><LazyPage Component={OrderDetails} /></AnimatedPage></AppLayout>
               </ProtectedRoute>
             } 
           />
@@ -150,8 +218,8 @@ const AppRoutesContent = () => {
             } 
           />
 
-          {/* Fallback Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Fallback Catch-all 404 */}
+          <Route path="*" element={<AppLayout><AnimatedPage><LazyPage Component={NotFound} /></AnimatedPage></AppLayout>} />
         </Routes>
       </AnimatePresence>
     </>

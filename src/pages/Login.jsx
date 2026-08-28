@@ -114,9 +114,9 @@ export const Login = () => {
               />
 
               <Box style={{ textAlign: "right" }}>
-                <a href="#reset" onClick={(e) => { e.preventDefault(); alert("Mock password reset request link sent to " + (email || "your email")); }} style={{ fontSize: "12px", color: theme.palette.primary.main, textDecoration: "none" }}>
+                <Link to="/forgot-password" style={{ fontSize: "12px", color: theme.palette.primary.main, textDecoration: "none" }}>
                   Forgot Password?
-                </a>
+                </Link>
               </Box>
 
               <Button

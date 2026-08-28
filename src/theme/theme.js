@@ -19,6 +19,7 @@ export const theme = createTheme({
       default: tokens.color.background.default,
       paper: tokens.color.background.surface,
       elevated: tokens.color.background.elevated,
+      washed: tokens.color.background.washed,
     },
     text: {
       primary: tokens.color.text.primary,
@@ -32,6 +33,7 @@ export const theme = createTheme({
       dark: tokens.color.primary.hover,
       active: tokens.color.primary.active,
       soft: tokens.color.primary.soft,
+      glow: tokens.color.primary.glow,
     },
     accent: {
       main: tokens.color.accent.main,
@@ -42,6 +44,7 @@ export const theme = createTheme({
     border: {
       default: tokens.color.border.default,
       strong: tokens.color.border.strong,
+      purple: tokens.color.border.purple,
     },
     success: {
       main: tokens.color.status.success,
@@ -276,4 +279,12 @@ theme.typography.label = {
     fontSize: tokens.typography.sizes.label.desktop,
   },
 };
+
+theme.radius = tokens.radius;
+theme.elevation = tokens.elevation;
+theme.zIndexTokens = tokens.zIndex;
+theme.aspectRatio = tokens.aspectRatio;
+theme.iconSize = tokens.iconSize;
+theme.containerWidth = tokens.containerWidth;
+
 export default theme;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { styled, useTheme } from "@mui/material/styles";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
@@ -26,6 +26,8 @@ import { EmptyState } from "../components/primitives/EmptyState";
 import { Rating } from "../components/primitives/Rating";
 import { ProductCard } from "../features/products/components/ProductCard/ProductCard";
 import { productService } from "../services/productService";
+import { useCart } from "../store/CartContext";
+import { useWishlist } from "../store/WishlistContext";
 
 const CatalogLayout = styled("div")(({ theme }) => ({
   display: "grid",
@@ -79,8 +81,9 @@ const SortAndFilterHeader = styled("div")(({ theme }) => ({
 
 export const Catalog = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { addItem } = useCart();
+  const { toggleWishlist, isWishlisted } = useWishlist();
 
   // Extract initial query coordinates
   const getInitialParam = (key, fallback) => searchParams.get(key) || fallback;
@@ -469,7 +472,9 @@ export const Catalog = () => {
                 <Grid item xs={12} sm={6} md={4} key={prod.id}>
                   <ProductCard
                     product={prod}
-                    onAddToCart={() => navigate("/cart")}
+                    onAddToCart={addItem}
+                    onWishlistToggle={toggleWishlist}
+                    isWishlisted={isWishlisted(prod.id)}
                   />
                 </Grid>
               ))}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { styled } from "@mui/material/styles";
+import { styled, useTheme } from "@mui/material/styles";
+import { motion } from "framer-motion";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import BoltIcon from "@mui/icons-material/Bolt";
@@ -125,6 +126,7 @@ export const ProductCard = ({
   onWishlistToggle,
   isWishlisted = false,
 }) => {
+  const theme = useTheme();
   const [isFav, setIsFav] = useState(isWishlisted);
   const [cartState, setCartState] = useState("default");
 
@@ -179,11 +181,17 @@ export const ProductCard = ({
             size="sm"
             onClick={handleWishlistClick}
           >
-            {isFav ? (
-              <FavoriteIcon style={{ color: "#EF4444" }} />
-            ) : (
-              <FavoriteBorderIcon />
-            )}
+            <motion.div
+              animate={{ scale: isFav ? [1, 1.25, 1] : 1 }}
+              transition={{ duration: 0.3 }}
+              style={{ display: "flex" }}
+            >
+              {isFav ? (
+                <FavoriteIcon style={{ color: "#EF4444" }} />
+              ) : (
+                <FavoriteBorderIcon />
+              )}
+            </motion.div>
           </IconButton>
         </WishlistOverlay>
       </ImageContainer>
@@ -192,6 +200,16 @@ export const ProductCard = ({
         <div>
           <CategoryLabel>{product.category || "Marketplace Item"}</CategoryLabel>
           <ProductTitle title={product.title}>{product.title}</ProductTitle>
+          
+          {product.type.toLowerCase() === "digital" && product.specs && (
+            <div style={{ display: "flex", gap: "6px", fontSize: "11px", color: theme.palette.text.secondary, marginTop: "4px", flexWrap: "wrap" }}>
+              <span>{product.specs.format || "ZIP"}</span>
+              <span>·</span>
+              <span>{product.specs.fileSize || "158.2 MB"}</span>
+              <span>·</span>
+              <span>{product.specs.version || "v1.0.0"}</span>
+            </div>
+          )}
         </div>
 
         <Rating value={product.rating} count={product.ratingCount} size="xs" />
@@ -217,7 +235,7 @@ export const ProductCard = ({
         </MetaContainer>
 
         <Button
-          variant="secondary"
+          variant="primary"
           state={cartState}
           disabled={!product.inStock}
           fullWidth

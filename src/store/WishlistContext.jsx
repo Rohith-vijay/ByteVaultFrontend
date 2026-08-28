@@ -26,8 +26,14 @@ export const WishlistProvider = ({ children }) => {
     setWishlistItems((prev) => {
       const exists = prev.some((item) => item.id === product.id);
       if (exists) {
+        window.dispatchEvent(new CustomEvent("bytevault_toast", {
+          detail: { message: `Removed from wishlist.` }
+        }));
         return prev.filter((item) => item.id !== product.id);
       }
+      window.dispatchEvent(new CustomEvent("bytevault_toast", {
+        detail: { message: `Added to wishlist!` }
+      }));
       return [...prev, product];
     });
   };

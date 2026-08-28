@@ -123,7 +123,7 @@ const initializeMockDb = () => {
     localStorage.setItem("bytevault_user_addresses", JSON.stringify(initialAddresses));
   }
 
-  if (!localStorage.getItem("bytevault_products")) {
+  if (!localStorage.getItem("bytevault_products") || !localStorage.getItem("bytevault_products").includes("prod_8")) {
     const detailedProducts = mockProducts.map(p => {
       const isDigital = p.type === "DIGITAL" || p.type === "digital";
       return {
@@ -239,6 +239,85 @@ const initializeMockDb = () => {
     ];
 
     localStorage.setItem("bytevault_products", JSON.stringify([...detailedProducts, ...extraProducts]));
+  }
+  
+  if (!localStorage.getItem("bytevault_downloads")) {
+    const initialDownloads = [
+      {
+        id: "dl_1",
+        productId: "prod_8",
+        title: "Ultimate Figma Design System - Starter Pack",
+        image: "https://images.unsplash.com/photo-1541462608141-2f58c6e68e98?w=600&auto=format&fit=crop&q=80",
+        fileSize: "12 MB",
+        format: "Figma File (.fig)",
+        downloadCount: 3,
+        status: "active",
+        unlockedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        updateAvailable: true,
+      },
+      {
+        id: "dl_2",
+        productId: "prod_6",
+        title: "Rust Microservices Architecture Blueprint",
+        image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?w=600&auto=format&fit=crop&q=80",
+        fileSize: "89 MB",
+        format: "ZIP (PDF & Rust code)",
+        downloadCount: 0,
+        status: "active",
+        unlockedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+      }
+    ];
+    localStorage.setItem("bytevault_downloads", JSON.stringify(initialDownloads));
+  }
+
+  if (!localStorage.getItem("bytevault_orders")) {
+    const initialOrders = [
+      {
+        id: "ord_998124",
+        userId: "usr_1",
+        createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+        items: [
+          {
+            id: "prod_6",
+            title: "Rust Microservices Architecture Blueprint",
+            price: 49.00,
+            quantity: 1,
+            type: "DIGITAL",
+            image: "https://images.unsplash.com/photo-1607799279861-4dd421887fb3?w=600&auto=format&fit=crop&q=80",
+          },
+          {
+            id: "prod_2",
+            title: "Minimalist Full-Grain Leather Backpack",
+            price: 135.00,
+            quantity: 1,
+            type: "PHYSICAL",
+            image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
+          }
+        ],
+        subtotal: 184.00,
+        tax: 14.72,
+        shipping: 0.00,
+        total: 198.72,
+        shippingAddress: {
+          name: "Alex Rivera",
+          street: "128 Commerce Way, Apt 3B",
+          city: "San Francisco",
+          state: "CA",
+          zip: "94107",
+          country: "United States"
+        },
+        paymentMethod: "Visa ending in 4242",
+        fulfillmentStatus: "IN_TRANSIT",
+        trackingSteps: [
+          { label: "Processing & Payment Cleared", date: new Date(Date.now() - 86400000 * 5).toISOString(), completed: true },
+          { label: "Packed in Warehouse", date: new Date(Date.now() - 86400000 * 4).toISOString(), completed: true },
+          { label: "Shipped", date: new Date(Date.now() - 86400000 * 3).toISOString(), completed: true },
+          { label: "In Transit", date: new Date(Date.now() - 86400000 * 2).toISOString(), completed: true },
+          { label: "Delivered", date: "", completed: false }
+        ]
+      }
+    ];
+    localStorage.setItem("bytevault_orders", JSON.stringify(initialOrders));
   }
   
   if (!localStorage.getItem("bytevault_cart")) {

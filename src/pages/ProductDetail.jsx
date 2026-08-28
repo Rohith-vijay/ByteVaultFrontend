@@ -476,7 +476,12 @@ export const ProductDetail = () => {
           <Grid container spacing={4}>
             {related.map(prod => (
               <Grid item xs={12} sm={6} md={3} key={prod.id}>
-                <ProductCard product={prod} />
+                <ProductCard 
+                  product={prod} 
+                  onAddToCart={addItem} 
+                  onWishlistToggle={toggleWishlist}
+                  isWishlisted={isWishlisted(prod.id)}
+                />
               </Grid>
             ))}
           </Grid>

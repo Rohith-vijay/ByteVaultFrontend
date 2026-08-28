@@ -3,36 +3,39 @@
 export const tokens = {
   color: {
     background: {
-      default: "#FAF9F6", // Warm neutral off-white
-      surface: "#FFFFFF", // Primary surface/card
-      elevated: "#F3F2EE", // Deeper neutral surface/active state
+      default: "#F8FAFC", // Clean, light slate/neutral background
+      surface: "#FFFFFF", // White for cards and product showcases
+      elevated: "#F1F5F9", // Slate-100 for active/elevated sub-surfaces
+      washed: "#F5F3FF", // Washed purple accent background
     },
     text: {
-      primary: "#111111", // High contrast near-black
-      secondary: "#4B5563", // Slate gray
-      muted: "#9CA3AF", // Muted gray
+      primary: "#0F172A", // Deep Oxford Slate for primary readability
+      secondary: "#334155", // Slate-700 for descriptors/secondary text
+      muted: "#64748B", // Slate-500 for captions and disabled elements
     },
     border: {
-      default: "#E5E7EB", // Light gray
-      strong: "#D1D5DB", // Accessible focus/interactive border
+      default: "#E2E8F0", // Slate-200 for thin boundaries
+      strong: "#CBD5E1", // Slate-300 for focus indicator boundaries
+      purple: "#E9D5FF", // Soft purple border
     },
     primary: {
-      main: "#4F46E5", // Deep indigo
-      hover: "#4338CA",
-      active: "#3730A3",
-      soft: "#EEF2FF",
+      main: "#7C3AED", // Primary brand Purple
+      hover: "#6D28D9", // Dark Purple
+      active: "#5B21B6", // Deepest Purple
+      soft: "#F3E8FF", // Soft/washed Lighter Purple
+      glow: "rgba(124, 58, 237, 0.15)", // Soft purple brand glow
     },
     accent: {
-      main: "#F97316", // Restrained warm orange
-      hover: "#EA580C",
-      active: "#C2410C",
-      soft: "#FFF7ED",
+      main: "#3B82F6", // Restrained Blue for navigation & trust
+      hover: "#2563EB",
+      active: "#1D4ED8",
+      soft: "#EFF6FF",
     },
     status: {
-      success: "#10B981", // Emerald
-      warning: "#F59E0B", // Amber
-      error: "#EF4444", // Rose
-      info: "#3B82F6", // Blue
+      success: "#10B981", // Emerald green for success
+      warning: "#F59E0B", // Amber yellow for warnings/pending
+      error: "#EF4444", // Rose red for errors
+      info: "#0284C7", // Sky blue for trust info
     },
   },
   typography: {
@@ -47,7 +50,6 @@ export const tokens = {
       bold: 700,
       extrabold: 800,
     },
-    // Sizing and line heights for desktop (base) and scale ratios
     sizes: {
       display: {
         desktop: "48px",
@@ -148,19 +150,20 @@ export const tokens = {
     "5xl": "128px",
   },
   radius: {
-    xs: "4px", // compact controls, badges, tiny tags
-    sm: "8px", // tooltips, smaller buttons
-    md: "12px", // input fields, main buttons
-    lg: "16px", // product cards, popup headers
-    xl: "20px", // modals, slider containers, major surfaces
-    full: "999px", // pills, status dots, profile avatars
+    xs: "4px",
+    sm: "8px",
+    md: "12px",
+    lg: "16px",
+    xl: "20px",
+    full: "999px",
   },
   elevation: {
     none: "none",
-    subtle: "0px 1px 3px rgba(17, 17, 17, 0.04), 0px 1px 2px rgba(17, 17, 17, 0.02)", // standard flat card separation
-    hover: "0px 10px 20px -4px rgba(17, 17, 17, 0.06), 0px 4px 12px -2px rgba(17, 17, 17, 0.03)", // elevated hovering card
-    popover: "0px 12px 28px -6px rgba(17, 17, 17, 0.08), 0px 8px 16px -4px rgba(17, 17, 17, 0.04)", // dropdown menu/select dropdowns
-    modal: "0px 24px 48px -12px rgba(17, 17, 17, 0.12), 0px 16px 24px -8px rgba(17, 17, 17, 0.06)", // overlays, dialogs
+    subtle: "0px 1px 3px rgba(15, 23, 42, 0.03), 0px 1px 2px rgba(15, 23, 42, 0.01)", // slate tinted flat cards
+    hover: "0px 10px 25px -4px rgba(124, 58, 237, 0.08), 0px 4px 12px -2px rgba(124, 58, 237, 0.03)", // elevated hovering card with purple tint
+    popover: "0px 12px 28px -6px rgba(15, 23, 42, 0.08), 0px 8px 16px -4px rgba(15, 23, 42, 0.04)",
+    modal: "0px 24px 48px -12px rgba(15, 23, 42, 0.12), 0px 16px 24px -8px rgba(15, 23, 42, 0.06)",
+    purpleGlow: "0px 0px 15px rgba(124, 58, 237, 0.15)", // Custom branding glow
   },
   zIndex: {
     base: 0,
@@ -174,15 +177,15 @@ export const tokens = {
   },
   motion: {
     duration: {
-      micro: 150, // button hover, toggle switch, micro-feedback
-      component: 280, // dropdown menu, drawer slide, card flip
-      page: 400, // full page route fade/slide
-      storytelling: 750, // scroll section fade/reveal, hero entrance
+      micro: 150,
+      component: 280,
+      page: 400,
+      storytelling: 750,
     },
     easing: {
-      standard: "cubic-bezier(0.4, 0.0, 0.2, 1)", // smooth start and end
-      decelerate: "cubic-bezier(0.0, 0.0, 0.2, 1)", // entrance animation
-      accelerate: "cubic-bezier(0.4, 0.0, 1, 1)", // exit animation
+      standard: "cubic-bezier(0.4, 0.0, 0.2, 1)",
+      decelerate: "cubic-bezier(0.0, 0.0, 0.2, 1)",
+      accelerate: "cubic-bezier(0.4, 0.0, 1, 1)",
       spring: {
         type: "spring",
         stiffness: 300,
@@ -191,17 +194,17 @@ export const tokens = {
     },
   },
   iconSize: {
-    xs: 16, // metadata details, rating stars
-    sm: 20, // inline controls, list bullets
-    md: 24, // normal action buttons, main controls
-    lg: 32, // features, headers
-    xl: 48, // major icons, empty states
+    xs: 16,
+    sm: 20,
+    md: 24,
+    lg: 32,
+    xl: 48,
   },
   aspectRatio: {
-    product: "3/4", // editorial photo aspect ratio
-    thumbnail: "1/1", // square preview (e.g. cart or miniature panels)
-    hero: "16/9", // standard banners
-    digitalPreview: "16/10", // digital product screenshots
+    product: "3/4",
+    thumbnail: "1/1",
+    hero: "16/9",
+    digitalPreview: "16/10",
   },
   breakpoints: {
     xs: 0,

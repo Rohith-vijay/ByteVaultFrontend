@@ -87,7 +87,6 @@ export const Checkout = () => {
   const [step, setStep] = useState(1); // steps: 1 = Shipping, 2 = Payment, 3 = Confirm
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
-  const [createdOrder, setCreatedOrder] = useState(null);
 
   // Address Inputs
   const [addressName, setAddressName] = useState(user?.name || "");
@@ -172,9 +171,8 @@ export const Checkout = () => {
       // 7. Entitlement Available
       setTxState("Entitlement Available");
 
-      setCreatedOrder(order);
       clearCart();
-      setStep(3); // success view
+      navigate(`/order-confirmation/${order.id}`);
     } catch (err) {
       setCheckoutError(err.message || "Checkout failed. Please retry.");
       setTxState("Cart Ready");

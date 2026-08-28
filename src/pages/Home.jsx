@@ -5,9 +5,11 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import {
   Bolt as BoltIcon,
-  LocalShipping as LocalShippingIcon,
   VerifiedUser as VerifiedUserIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowForwardIcon,
+  CloudDownload as DownloadIcon,
+  Lock as LockIcon,
+  Star as StarIcon
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
@@ -19,6 +21,8 @@ import { SectionHeader } from "../components/primitives/SectionHeader";
 import { Skeleton } from "../components/primitives/Skeleton";
 import { ProductCard } from "../features/products/components/ProductCard/ProductCard";
 import { productService } from "../services/productService";
+import { useCart } from "../store/CartContext";
+import { useWishlist } from "../store/WishlistContext";
 import { staggerContainerVariants, staggerChildVariants } from "../animations/motion";
 
 const HeroSection = styled("section")(({ theme }) => ({
@@ -46,32 +50,6 @@ const HeroSubtitle = styled("p")(({ theme }) => ({
   lineHeight: 1.6,
 }));
 
-const CategoryCard = styled(Card)(({ theme }) => ({
-  textAlign: "center",
-  cursor: "pointer",
-  transition: `transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease`,
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-    boxShadow: theme.elevation.hover,
-    transform: "translateY(-4px)"
-  }
-}));
-
-const CategoryIcon = styled("div")(({ theme }) => ({
-  width: "56px",
-  height: "56px",
-  borderRadius: theme.radius.full,
-  backgroundColor: theme.palette.primary.soft,
-  color: theme.palette.primary.main,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "0 auto 16px auto",
-  "& svg": {
-    fontSize: "28px"
-  }
-}));
-
 const TrustBanner = styled("section")(({ theme }) => ({
   paddingTop: theme.spacing(12),
   paddingBottom: theme.spacing(12),
@@ -87,60 +65,60 @@ const TrustItem = styled("div")(({ theme }) => ({
   padding: theme.spacing(4),
 }));
 
-const StorySection = styled("section")(({ theme }) => ({
+const BenefitsSection = styled("section")(({ theme }) => ({
   paddingTop: theme.spacing(16),
   paddingBottom: theme.spacing(16),
-  backgroundColor: theme.palette.background.default,
+  backgroundColor: theme.palette.background.elevated,
   borderTop: `1px solid ${theme.palette.border.default}`,
+  borderBottom: `1px solid ${theme.palette.border.default}`,
 }));
 
-const StoryTitle = styled("h2")(({ theme }) => ({
-  ...theme.typography.h2,
-  color: theme.palette.text.primary,
-  margin: `${theme.spacing(4)} 0`
+const BenefitCard = styled(Card)(({ theme }) => ({
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  gap: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+  padding: theme.spacing(6),
+  borderRadius: "16px",
 }));
 
-const StoryText = styled("p")(({ theme }) => ({
-  ...theme.typography.body1,
-  color: theme.palette.text.secondary,
-  lineHeight: 1.7,
-  marginBottom: theme.spacing(6)
+const FinalCTASection = styled("section")(({ theme }) => ({
+  paddingTop: theme.spacing(20),
+  paddingBottom: theme.spacing(20),
+  backgroundColor: theme.palette.primary.main,
+  color: "#FFFFFF",
+  textAlign: "center",
+  position: "relative",
+  overflow: "hidden",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    top: "-50%",
+    left: "-50%",
+    width: "200%",
+    height: "200%",
+    background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%)",
+    pointerEvents: "none",
+  }
 }));
 
 export const Home = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { addItem } = useCart();
+  const { toggleWishlist, isWishlisted } = useWishlist();
 
   const [loading, setLoading] = useState(true);
   const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [recommendedProducts, setRecommendedProducts] = useState([]);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   useEffect(() => {
     const fetchHomepageData = async () => {
       setLoading(true);
       try {
         const list = await productService.getProducts();
-        // Curated Items (first 5)
-        setFeaturedProducts(list.slice(0, 5));
-        
-        // Recommended (next 3 items)
-        setRecommendedProducts(list.slice(5, 8));
-
-        // Load recently viewed products
-        const viewedIds = JSON.parse(localStorage.getItem("bytevault_recently_viewed") || "[]");
-        if (viewedIds.length > 0) {
-          const viewedItems = [];
-          for (const vid of viewedIds) {
-            try {
-              const item = await productService.getProductById(vid);
-              if (item) viewedItems.push(item);
-            } catch {
-              // Ignore invalid IDs
-            }
-          }
-          setRecentlyViewed(viewedItems);
-        }
+        // Featured Products (slice to top 4 products for clean layout)
+        setFeaturedProducts(list.slice(0, 4));
       } catch (err) {
         console.error("Home details fetching error", err);
       } finally {
@@ -150,9 +128,16 @@ export const Home = () => {
     fetchHomepageData();
   }, []);
 
+  const revealAnim = {
+    initial: { opacity: 0, y: 35 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-80px" },
+    transition: { duration: 0.5, ease: "easeOut" }
+  };
+
   return (
     <>
-      {/* Hero Header Section */}
+      {/* 1. Hero Header Section */}
       <HeroSection>
         <Container maxWidth="xl">
           <Grid container spacing={8} alignItems="center">
@@ -167,7 +152,7 @@ export const Home = () => {
             >
               <motion.div variants={staggerChildVariants}>
                 <Box mb={3}>
-                  <Chip label="Developer & Designer Catalog" color="primary" uppercase />
+                  <Chip label="Premium Software & Hardware" color="primary" uppercase />
                 </Box>
               </motion.div>
               <motion.div variants={staggerChildVariants}>
@@ -178,17 +163,16 @@ export const Home = () => {
               </motion.div>
               <motion.div variants={staggerChildVariants}>
                 <HeroSubtitle>
-                  ByteVault Media bridges the gap between software optimization and tactile hardware workspace gear.
-                  Explore premium React kits, custom mechanical items, and books.
+                  ByteVault Media bridges the gap between digital software optimization blueprints and tactile hardware workspace accessories. Explore mechanical keyboards, developer templates, and coding vectors.
                 </HeroSubtitle>
               </motion.div>
               <motion.div variants={staggerChildVariants}>
                 <Box display="flex" gap={4} flexWrap="wrap">
                   <Button variant="primary" onClick={() => navigate("/catalog")} rightIcon={<ArrowForwardIcon style={{ fontSize: "16px" }} />}>
-                    Explore Workspace
+                    Explore Marketplace
                   </Button>
                   <Button variant="secondary" onClick={() => navigate("/catalog?type=digital")}>
-                    Browse Digital
+                    Explore Digital Assets
                   </Button>
                 </Box>
               </motion.div>
@@ -199,17 +183,17 @@ export const Home = () => {
                 display="flex" 
                 justifyContent="center"
                 component={motion.div}
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               >
                 <img 
                   src="https://images.unsplash.com/photo-1547082299-de196ea013d6?w=800&auto=format&fit=crop&q=80" 
-                  alt="Minimalist Desk Setup with Laptop, Keyboard, and Headphones"
+                  alt="Minimalist desk layout highlighting custom software templates and custom keyboard"
                   style={{
                     width: "100%",
-                    maxWidth: "520px",
-                    height: "380px",
+                    maxWidth: "540px",
+                    height: "400px",
                     objectFit: "cover",
                     borderRadius: theme.radius.xl,
                     boxShadow: theme.elevation.hover
@@ -221,34 +205,34 @@ export const Home = () => {
         </Container>
       </HeroSection>
 
-      {/* Trust Values Banner */}
+      {/* 2. Trust Value Propositions */}
       <TrustBanner>
         <Container maxWidth="xl">
           <Grid container spacing={6}>
             <Grid item xs={12} sm={4}>
               <TrustItem>
                 <VerifiedUserIcon style={{ fontSize: "36px", color: theme.palette.primary.main, marginBottom: "16px" }} />
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Curated Quality</h4>
-                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, textAlign: "center" }}>
-                  Every template and physical gear item in our store is audited for performance and security.
+                <h4 style={{ margin: "0 0 8px 0", color: theme.palette.text.primary, fontWeight: "bold" }}>Curated Quality</h4>
+                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, color: theme.palette.text.secondary }}>
+                  Every software script and physical gear product is custom audited by our engineers for maximum performance.
                 </p>
               </TrustItem>
             </Grid>
             <Grid item xs={12} sm={4}>
               <TrustItem>
                 <BoltIcon style={{ fontSize: "36px", color: theme.palette.accent.main, marginBottom: "16px" }} />
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Instant Digital Delivery</h4>
-                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, textAlign: "center" }}>
-                  Purchase digital kits, vectors, or blueprints and download them immediately from your cabinet.
+                <h4 style={{ margin: "0 0 8px 0", color: theme.palette.text.primary, fontWeight: "bold" }}>Secure/Instant Digital Delivery</h4>
+                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, color: theme.palette.text.secondary }}>
+                  Digital assets, blueprints, and design vectors are unlocked inside your personal customer library cabinet instantly.
                 </p>
               </TrustItem>
             </Grid>
             <Grid item xs={12} sm={4}>
               <TrustItem>
-                <LocalShippingIcon style={{ fontSize: "36px", color: theme.palette.text.primary, marginBottom: "16px" }} />
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Secure Global Shipping</h4>
-                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, textAlign: "center" }}>
-                  Insured courier shipping for hardware and books with live tracking notifications.
+                <DownloadIcon style={{ fontSize: "36px", color: theme.palette.text.primary, marginBottom: "16px" }} />
+                <h4 style={{ margin: "0 0 8px 0", color: theme.palette.text.primary, fontWeight: "bold" }}>Reliable Workspace Gear</h4>
+                <p style={{ margin: 0, fontSize: "13px", lineHeight: 1.5, color: theme.palette.text.secondary }}>
+                  Physical packages are fully insured and shipped worldwide via premium carrier routes with active tracking milestones.
                 </p>
               </TrustItem>
             </Grid>
@@ -256,172 +240,173 @@ export const Home = () => {
         </Container>
       </TrustBanner>
 
-      {/* Category Exploration Section */}
-      <section style={{ paddingTop: "64px", paddingBottom: "64px" }}>
-        <Container maxWidth="xl">
-          <SectionHeader 
-            title="Browse by Workspace Segment" 
-            subtitle="Choose between digital files or workspace setups." 
-          />
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} md={3} onClick={() => navigate("/catalog?type=digital")}>
-              <CategoryCard padding={6}>
-                <CategoryIcon><BoltIcon /></CategoryIcon>
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Digital Software</h4>
-                <span style={{ fontSize: "13px", color: theme.palette.text.secondary }}>Frameworks, UI Kits, blueprints</span>
-              </CategoryCard>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3} onClick={() => navigate("/catalog?category=Audio Equipment")}>
-              <CategoryCard padding={6}>
-                <CategoryIcon><ArrowForwardIcon style={{ transform: "rotate(-45deg)" }} /></CategoryIcon>
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Audio & Focus</h4>
-                <span style={{ fontSize: "13px", color: theme.palette.text.secondary }}>Noise-canceling headphones</span>
-              </CategoryCard>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3} onClick={() => navigate("/catalog?category=Computer Peripherals")}>
-              <CategoryCard padding={6}>
-                <CategoryIcon><ArrowForwardIcon /></CategoryIcon>
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Desktop Gear</h4>
-                <span style={{ fontSize: "13px", color: theme.palette.text.secondary }}>Custom keycaps, keypads</span>
-              </CategoryCard>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3} onClick={() => navigate("/catalog?category=Travel Gear")}>
-              <CategoryCard padding={6}>
-                <CategoryIcon><LocalShippingIcon /></CategoryIcon>
-                <h4 style={{ margin: "0 0 8px 0", color: "#111111" }}>Travel & Tech</h4>
-                <span style={{ fontSize: "13px", color: theme.palette.text.secondary }}>Minimalist backpacks, organizers</span>
-              </CategoryCard>
-            </Grid>
-          </Grid>
-        </Container>
-      </section>
-
-      {/* Curated Showcases */}
-      <section style={{ paddingTop: "32px", paddingBottom: "64px" }}>
-        <Container maxWidth="xl">
-          <SectionHeader 
-            title="Curated Marketplace Items" 
-            subtitle="High-demand entries recommended for you."
-            action={
-              <Button variant="secondary" onClick={() => navigate("/catalog")}>
-                View All Catalog
-              </Button>
-            }
-          />
-          {loading ? (
-            <Grid container spacing={4}>
-              {[1, 2, 3, 4, 5].map(i => (
-                <Grid item xs={12} sm={6} md={4} lg={2.4} key={i}>
-                  <Skeleton variant="rectangular" height={220} radius="lg" style={{ marginBottom: "8px" }} />
-                  <Skeleton variant="text" width="80%" style={{ marginBottom: "4px" }} />
-                  <Skeleton variant="text" width="40%" />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Grid container spacing={4}>
-              {featuredProducts.map((prod) => (
-                <Grid item xs={12} sm={6} md={4} lg={2.4} key={prod.id}>
-                  <ProductCard
-                    product={prod}
-                    onAddToCart={() => navigate("/cart")}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </Container>
-      </section>
-
-      {/* Recommended For You Section */}
-      <section style={{ paddingTop: "32px", paddingBottom: "64px" }}>
-        <Container maxWidth="xl">
-          <SectionHeader 
-            title="Recommended For You" 
-            subtitle="Software and workspace hardware suggestions tailored for builders."
-          />
-          {loading ? (
-            <Grid container spacing={4}>
-              {[1, 2, 3].map(i => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <Skeleton variant="rectangular" height={220} radius="lg" style={{ marginBottom: "8px" }} />
-                  <Skeleton variant="text" width="80%" style={{ marginBottom: "4px" }} />
-                  <Skeleton variant="text" width="40%" />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Grid container spacing={4}>
-              {recommendedProducts.map((prod) => (
-                <Grid item xs={12} sm={6} md={4} key={prod.id}>
-                  <ProductCard
-                    product={prod}
-                    onAddToCart={() => navigate("/cart")}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          )}
-        </Container>
-      </section>
-
-      {/* Recently Viewed Products Section */}
-      {!loading && recentlyViewed.length > 0 && (
-        <section style={{ paddingTop: "48px", paddingBottom: "64px", backgroundColor: theme.palette.background.elevated, borderTop: `1px solid ${theme.palette.border.default}`, borderBottom: `1px solid ${theme.palette.border.default}` }}>
+      {/* 3. Featured Products Section (Limited to 4 items) */}
+      <motion.div {...revealAnim}>
+        <Box style={{ paddingTop: "80px", paddingBottom: "64px" }}>
           <Container maxWidth="xl">
             <SectionHeader 
-              title="Recently Viewed" 
-              subtitle="Items you inspected during this session."
+              title="Featured Products" 
+              subtitle="Explore our highest priority handpicked marketplace blueprints and gear."
+              action={
+                <Button variant="secondary" onClick={() => navigate("/catalog")}>
+                  View All Products
+                </Button>
+              }
             />
-            <Grid container spacing={4}>
-              {recentlyViewed.map((prod) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={prod.id}>
-                  <ProductCard
-                    product={prod}
-                    onAddToCart={() => navigate("/cart")}
-                  />
-                </Grid>
-              ))}
+            {loading ? (
+              <Grid container spacing={4}>
+                {[1, 2, 3, 4].map(i => (
+                  <Grid item xs={12} sm={6} md={3} key={i}>
+                    <Skeleton variant="rectangular" height={220} radius="lg" style={{ marginBottom: "8px" }} />
+                    <Skeleton variant="text" width="80%" style={{ marginBottom: "4px" }} />
+                    <Skeleton variant="text" width="40%" />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Grid container spacing={4}>
+                {featuredProducts.map((prod) => (
+                  <Grid item xs={12} sm={6} md={3} key={prod.id}>
+                    <ProductCard
+                      product={prod}
+                      onAddToCart={addItem}
+                      onWishlistToggle={toggleWishlist}
+                      isWishlisted={isWishlisted(prod.id)}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Container>
+        </Box>
+      </motion.div>
+
+      {/* 4. Digital vs Physical Segment Gateways */}
+      <motion.div {...revealAnim}>
+        <Box style={{ paddingTop: "48px", paddingBottom: "80px" }}>
+          <Container maxWidth="xl">
+            <SectionHeader 
+              title="Select Your Focus" 
+              subtitle="Browse developer assets and productivity desk peripherals via custom-tailored sections." 
+            />
+            <Grid container spacing={6}>
+              <Grid item xs={12} md={6} onClick={() => navigate("/catalog?type=digital")} style={{ cursor: "pointer" }}>
+                <motion.div whileHover={{ y: -6 }} transition={{ duration: 0.2 }}>
+                  <Card padding={8} style={{ 
+                    position: "relative",
+                    height: "280px", 
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                    backgroundImage: "linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.3) 100%), url(https://images.unsplash.com/photo-1541462608141-2f58c6e68e98?w=800&auto=format&fit=crop&q=80)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    color: "#FFFFFF",
+                    border: "none",
+                  }}>
+                    <h3 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 8px 0" }}>Digital Assets</h3>
+                    <p style={{ margin: "0 0 16px 0", fontSize: "13px", opacity: 0.9, maxWidth: "340px", lineHeight: 1.5 }}>
+                      Commercial UI kits, software blueprints, developer scripts, and microservice coding schemas.
+                    </p>
+                    <Button variant="primary" style={{ alignSelf: "flex-start", fontSize: "12px", padding: "6px 16px" }}>Browse Digital</Button>
+                  </Card>
+                </motion.div>
+              </Grid>
+              <Grid item xs={12} md={6} onClick={() => navigate("/catalog?type=physical")} style={{ cursor: "pointer" }}>
+                <motion.div whileHover={{ y: -6 }} transition={{ duration: 0.2 }}>
+                  <Card padding={8} style={{ 
+                    position: "relative",
+                    height: "280px", 
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                    backgroundImage: "linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.3) 100%), url(https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    color: "#FFFFFF",
+                    border: "none",
+                  }}>
+                    <h3 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 8px 0" }}>Workspace Gear</h3>
+                    <p style={{ margin: "0 0 16px 0", fontSize: "13px", opacity: 0.9, maxWidth: "340px", lineHeight: 1.5 }}>
+                      Custom mechanical keypads, ergonomic desk organizers, and high-fidelity focus headphones.
+                    </p>
+                    <Button variant="primary" style={{ alignSelf: "flex-start", fontSize: "12px", padding: "6px 16px" }}>Browse Gear</Button>
+                  </Card>
+                </motion.div>
+              </Grid>
             </Grid>
           </Container>
-        </section>
-      )}
+        </Box>
+      </motion.div>
 
-      {/* Editorial Section */}
-      <StorySection>
-        <Container maxWidth="lg">
-          <Grid container spacing={8} alignItems="center">
-            <Grid item xs={12} md={5}>
-              <img 
-                src="https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?w=600&auto=format&fit=crop&q=80" 
-                alt="Product Designer working on laptop"
-                style={{
-                  width: "100%",
-                  height: "360px",
-                  objectFit: "cover",
-                  borderRadius: theme.radius.lg,
-                  boxShadow: theme.elevation.subtle
-                }}
-              />
+      {/* 5. "Why ByteVault" Benefits Grid */}
+      <motion.div {...revealAnim}>
+        <BenefitsSection>
+          <Container maxWidth="xl">
+            <SectionHeader
+              title="Why Choose ByteVault?"
+              subtitle="Every aspect of our customer platform is crafted for optimal workflow development."
+            />
+            <Grid container spacing={6}>
+              <Grid item xs={12} sm={6} md={3}>
+                <BenefitCard elevation="subtle">
+                  <VerifiedUserIcon style={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                  <h4 style={{ margin: "0 0 4px 0", fontWeight: "bold", color: "#111111", fontSize: "15px" }}>Vetted Quality</h4>
+                  <p style={{ margin: 0, fontSize: "12px", color: theme.palette.text.secondary, lineHeight: 1.6 }}>
+                    Every template, UI package, and mechanical switch undergoes a stringent double-check for reliability.
+                  </p>
+                </BenefitCard>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <BenefitCard elevation="subtle">
+                  <DownloadIcon style={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                  <h4 style={{ margin: "0 0 4px 0", fontWeight: "bold", color: "#111111", fontSize: "15px" }}>Instant Entitlements</h4>
+                  <p style={{ margin: 0, fontSize: "12px", color: theme.palette.text.secondary, lineHeight: 1.6 }}>
+                    Entitlements bind securely to your session ID, generating download signatures instantly inside your dashboard.
+                  </p>
+                </BenefitCard>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <BenefitCard elevation="subtle">
+                  <StarIcon style={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                  <h4 style={{ margin: "0 0 4px 0", fontWeight: "bold", color: "#111111", fontSize: "15px" }}>Lifetime Releases</h4>
+                  <p style={{ margin: 0, fontSize: "12px", color: theme.palette.text.secondary, lineHeight: 1.6 }}>
+                    Receive notification flags on software updates. Redownload new code versions directly at any time.
+                  </p>
+                </BenefitCard>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <BenefitCard elevation="subtle">
+                  <LockIcon style={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                  <h4 style={{ margin: "0 0 4px 0", fontWeight: "bold", color: "#111111", fontSize: "15px" }}>Secure Gateway</h4>
+                  <p style={{ margin: 0, fontSize: "12px", color: theme.palette.text.secondary, lineHeight: 1.6 }}>
+                    Encrypted card checkout ensures billing security. Decline simulations are built for offline sandbox testing.
+                  </p>
+                </BenefitCard>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={7}>
-              <Box mb={1}>
-                <Chip label="Our Visual Philosophy" color="accent" uppercase />
-              </Box>
-              <StoryTitle>
-                Designed for high focus workspaces.
-              </StoryTitle>
-              <StoryText>
-                At ByteVault, we believe software developer workflows are only as efficient as the physical environment they exist in.
-                By cataloging both commercial-grade web blueprints and custom workspace accessories under a single unified marketplace interface, we empower builders to optimize both their digital and physical toolsets in one checkout.
-              </StoryText>
-              <Button variant="primary" onClick={() => navigate("/catalog")}>
-                Explore the Concept
-              </Button>
-            </Grid>
-          </Grid>
-        </Container>
-      </StorySection>
+          </Container>
+        </BenefitsSection>
+      </motion.div>
+
+      {/* 6. Final CTA Banner */}
+      <motion.div {...revealAnim}>
+        <FinalCTASection>
+          <Container maxWidth="md">
+            <h2 style={{ fontSize: "36px", fontWeight: "bold", margin: "0 0 16px 0" }}>Elevate Your Dev Workspace</h2>
+            <p style={{ fontSize: "16px", margin: "0 0 32px 0", opacity: 0.9, lineHeight: 1.6 }}>
+              Explore the complete collection of software blueprints and desk hardware accessory products today.
+            </p>
+            <Button variant="secondary" onClick={() => navigate("/catalog")} style={{ color: theme.palette.primary.main, backgroundColor: "#FFFFFF", fontWeight: "bold" }}>
+              Start Browsing Now
+            </Button>
+          </Container>
+        </FinalCTASection>
+      </motion.div>
     </>
   );
 };

@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { styled, useTheme } from "@mui/material/styles";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
+import CircularProgress from "@mui/material/CircularProgress";
 import {
   CloudDownload as CloudDownloadIcon,
   History as HistoryIcon,
   Favorite as FavoriteIcon,
   Home as HomeIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  Security as SecurityIcon,
+  Notifications as NotificationsIcon,
+  Search as SearchIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Refresh as RefreshIcon,
+  Update as UpdateIcon
 } from "@mui/icons-material";
 
 import { Container } from "../components/primitives/Container";
@@ -22,11 +30,13 @@ import { IconButton } from "../components/primitives/IconButton";
 import { Chip } from "../components/primitives/Chip";
 import { Price } from "../components/primitives/Price";
 import { Skeleton } from "../components/primitives/Skeleton";
+import { Input } from "../components/primitives/Input";
 import { useAuth } from "../store/AuthContext";
 import { useWishlist } from "../store/WishlistContext";
+import { useCart } from "../store/CartContext";
 import { orderService } from "../services/orderService";
-import { downloadService } from "../services/downloadService";
 import { userService } from "../services/userService";
+import { fulfillmentService } from "../services/fulfillmentService";
 
 const TabPanelContainer = styled("div")(({ theme }) => ({
   marginTop: theme.spacing(6),
@@ -64,7 +74,7 @@ const TimelineNode = styled("div", {
     height: "16px",
     borderRadius: "50%",
     backgroundColor: completed 
-      ? theme.palette.success.main 
+      ? theme.palette.status.success 
       : active 
       ? theme.palette.primary.main 
       : theme.palette.border.default,
@@ -91,6 +101,11 @@ const FileRow = styled("div")(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.border.default}`,
   "&:last-child": {
     borderBottom: "none",
+  },
+  [theme.breakpoints.down("sm")]: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: theme.spacing(3),
   }
 }));
 
@@ -100,10 +115,11 @@ export const Account = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { wishlistItems, toggleWishlist } = useWishlist();
+  const { addItem } = useCart();
 
   // Tab mapping state
   const tabQuery = searchParams.get("tab") || "profile";
-  const tabMap = ["profile", "orders", "downloads", "wishlist", "addresses"];
+  const tabMap = ["profile", "orders", "downloads", "wishlist", "addresses", "security", "notifications"];
   const activeTabIdx = tabMap.indexOf(tabQuery) !== -1 ? tabMap.indexOf(tabQuery) : 0;
 
   const [orders, setOrders] = useState([]);
@@ -111,8 +127,30 @@ export const Account = () => {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // States for downloading simulation feedback
-  const [downloadingId, setDownloadingId] = useState(null);
+  // My Digital Library search/filter states
+  const [dlSearch, setDlSearch] = useState("");
+  const [dlFormatFilter, setDlFormatFilter] = useState("All");
+  const [dlSortBy, setDlSortBy] = useState("date_desc");
+
+  // Advanced download progression states
+  const [downloadStates, setDownloadStates] = useState({}); // { [fileId]: "idle" | "checking" | "preparing" | "ready" | "downloading" | "complete" | "error" }
+  const [downloadProgress, setDownloadProgress] = useState({}); // { [fileId]: number }
+  const [downloadErrors, setDownloadErrors] = useState({}); // { [fileId]: string }
+  const [retryCounts, setRetryCounts] = useState({}); // { [fileId]: number }
+
+  // Security passwords state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passLoading, setPassLoading] = useState(false);
+  const [passFeedback, setPassFeedback] = useState(null);
+
+  // Notifications checkboxes state
+  const [notifOrderUpdates, setNotifOrderUpdates] = useState(true);
+  const [notifProductVersions, setNotifProductVersions] = useState(true);
+  const [notifPromos, setNotifPromos] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifFeedback, setNotifFeedback] = useState(null);
 
   // Load account sub-resources
   useEffect(() => {
@@ -123,7 +161,7 @@ export const Account = () => {
         const orderHistory = await orderService.getOrdersByUser(user.id);
         setOrders(orderHistory);
 
-        const cabinetFiles = await downloadService.getDownloadsByUser(user.id);
+        const cabinetFiles = await fulfillmentService.getEntitlements();
         setDownloads(cabinetFiles);
 
         const addrBook = await userService.getAddresses(user.id);
@@ -142,14 +180,58 @@ export const Account = () => {
   };
 
   const handleTriggerDownload = async (file) => {
-    setDownloadingId(file.id);
+    const fileId = file.id;
+    const isRetry = (retryCounts[fileId] || 0) > 0;
+
+    // Phase 1: Checking Entitlement
+    setDownloadStates(prev => ({ ...prev, [fileId]: "checking" }));
+    setDownloadErrors(prev => ({ ...prev, [fileId]: null }));
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Simulate connection decline error for test retry states on prod_8
+    if (!isRetry && file.productId === "prod_8") {
+      setDownloadStates(prev => ({ ...prev, [fileId]: "error" }));
+      setDownloadErrors(prev => ({ ...prev, [fileId]: "Download server request refused. Link signature expired." }));
+      setRetryCounts(prev => ({ ...prev, [fileId]: 1 }));
+      return;
+    }
+
+    // Phase 2: Preparing Secure Link
+    setDownloadStates(prev => ({ ...prev, [fileId]: "preparing" }));
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Phase 3: Ready
+    setDownloadStates(prev => ({ ...prev, [fileId]: "ready" }));
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Phase 4: Downloading (progress increments)
+    setDownloadStates(prev => ({ ...prev, [fileId]: "downloading" }));
+    const steps = [0, 25, 50, 75, 100];
+    for (const p of steps) {
+      setDownloadProgress(prev => ({ ...prev, [fileId]: p }));
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+
     try {
-      const res = await downloadService.triggerFileDownload(file.id, file.title);
-      alert(`Download started: ${res.fileName}`);
-    } catch {
-      alert("Download file execution failed.");
-    } finally {
-      setDownloadingId(null);
+      const res = await fulfillmentService.getDownload(file.productId);
+      
+      // Complete phase
+      setDownloadStates(prev => ({ ...prev, [fileId]: "complete" }));
+      
+      // Simulate file download trigger in browser
+      const link = document.createElement("a");
+      link.href = "#";
+      link.setAttribute("download", res.fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        setDownloadStates(prev => ({ ...prev, [fileId]: "idle" }));
+      }, 3000);
+    } catch (err) {
+      setDownloadStates(prev => ({ ...prev, [fileId]: "error" }));
+      setDownloadErrors(prev => ({ ...prev, [fileId]: err.message || "Failed to finalize download locker link." }));
     }
   };
 
@@ -163,6 +245,33 @@ export const Account = () => {
         alert("Failed to delete address.");
       }
     }
+  };
+
+  const handleUpdatePassword = (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPassFeedback({ type: "error", message: "Passwords do not match." });
+      return;
+    }
+    setPassLoading(true);
+    setPassFeedback(null);
+    setTimeout(() => {
+      setPassLoading(false);
+      setPassFeedback({ type: "success", message: "Password updated successfully." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }, 1000);
+  };
+
+  const handleSaveNotifications = (e) => {
+    e.preventDefault();
+    setNotifLoading(true);
+    setNotifFeedback(null);
+    setTimeout(() => {
+      setNotifLoading(false);
+      setNotifFeedback({ type: "success", message: "Notification preferences saved." });
+    }, 800);
   };
 
   const renderTimeline = (status) => {
@@ -186,19 +295,42 @@ export const Account = () => {
     );
   };
 
+  // Filter and sort locker entitlements
+  const filteredDownloads = downloads
+    .filter(file => {
+      const titleMatch = file.title.toLowerCase().includes(dlSearch.toLowerCase());
+      const format = file.format || "ZIP";
+      const formatMatch = dlFormatFilter === "All" || format.toUpperCase().includes(dlFormatFilter.toUpperCase());
+      return titleMatch && formatMatch;
+    })
+    .sort((a, b) => {
+      if (dlSortBy === "date_desc") {
+        return new Date(b.unlockedAt || 0) - new Date(a.unlockedAt || 0);
+      }
+      if (dlSortBy === "title_asc") {
+        return a.title.localeCompare(b.title);
+      }
+      if (dlSortBy === "downloads_desc") {
+        return b.downloadCount - a.downloadCount;
+      }
+      return 0;
+    });
+
   return (
     <Container maxWidth="xl" style={{ paddingTop: "48px", paddingBottom: "96px" }}>
       <SectionHeader
         title={`Welcome Back, ${user?.name}`}
-        subtitle="Manage your physical shipping coordinates, orders history, or unlock file packages."
+        subtitle="Manage your coordinates, check digital product update licenses, or trace shipments."
       />
 
       <Tabs value={activeTabIdx} onChange={handleTabChange} indicatorColor="primary" textColor="primary" variant="scrollable" scrollButtons="auto">
         <Tab label="Profile Info" icon={<PersonIcon />} iconPosition="start" />
         <Tab label="Orders History" icon={<HistoryIcon />} iconPosition="start" />
-        <Tab label="Digital Cabinet" icon={<CloudDownloadIcon />} iconPosition="start" />
+        <Tab label="My Digital Library" icon={<CloudDownloadIcon />} iconPosition="start" />
         <Tab label="Wishlist" icon={<FavoriteIcon />} iconPosition="start" />
         <Tab label="Addresses" icon={<HomeIcon />} iconPosition="start" />
+        <Tab label="Security" icon={<SecurityIcon />} iconPosition="start" />
+        <Tab label="Notifications" icon={<NotificationsIcon />} iconPosition="start" />
       </Tabs>
 
       <TabPanelContainer>
@@ -219,10 +351,10 @@ export const Account = () => {
                       alt={user?.name} 
                       style={{ width: "96px", height: "96px", borderRadius: "50%", border: `3px solid ${theme.palette.primary.main}`, marginBottom: "16px" }}
                     />
-                    <h3 style={{ margin: "0 0 4px 0", color: "#111111" }}>{user?.name}</h3>
+                    <h3 style={{ margin: "0 0 4px 0", color: theme.palette.text.primary }}>{user?.name}</h3>
                     <Chip label={user?.role} color="primary" size="xs" variant="outlined" />
                     <p style={{ fontSize: "13px", color: theme.palette.text.secondary, marginTop: "16px" }}>
-                      Member since August 2026
+                      Active Member
                     </p>
                   </Card>
                 </Grid>
@@ -257,11 +389,13 @@ export const Account = () => {
                       <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2} mb={4}>
                         <Box>
                           <span style={{ fontSize: "12px", color: theme.palette.text.secondary }}>Order Reference</span>
-                          <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "bold" }}>{order.id}</h4>
+                          <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "bold" }}>
+                            <Link to={`/orders/${order.id}`} style={{ color: theme.palette.primary.main, textDecoration: "none" }}>{order.id}</Link>
+                          </h4>
                         </Box>
                         <Box style={{ textAlign: "right" }}>
                           <span style={{ fontSize: "12px", color: theme.palette.text.secondary }}>Date Placed</span>
-                          <div style={{ fontSize: "14px", fontWeight: "bold" }}>{new Date(order.date).toLocaleDateString()}</div>
+                          <div style={{ fontSize: "14px", fontWeight: "bold" }}>{new Date(order.createdAt || order.date).toLocaleDateString()}</div>
                         </Box>
                         <Box style={{ textAlign: "right" }}>
                           <span style={{ fontSize: "12px", color: theme.palette.text.secondary }}>Grand Total</span>
@@ -294,7 +428,7 @@ export const Account = () => {
                         <div style={{ marginTop: "24px" }}>
                           <Divider style={{ marginBottom: "16px" }} />
                           <span style={{ fontSize: "12px", color: theme.palette.text.secondary, fontWeight: "bold" }}>
-                            Fulfillment Package Status ({order.fulfillmentDetails.carrier || "Carrier Pending"} Tracking: {order.fulfillmentDetails.trackingNumber || "None"})
+                            Fulfillment Package Status (Carrier Tracking: {order.fulfillmentDetails?.trackingNumber || "Assigning"})
                           </span>
                           {renderTimeline(order.status)}
                         </div>
@@ -305,45 +439,169 @@ export const Account = () => {
               </Box>
             )}
 
-            {/* TABS 2: Cabinet */}
+            {/* TABS 2: My Digital Library */}
             {activeTabIdx === 2 && (
               <Card padding={6}>
-                <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "bold" }}>My Digital Locker</h3>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "18px", fontWeight: "bold" }}>My Digital Library</h3>
                 <p style={{ color: theme.palette.text.secondary, fontSize: "13px", marginBottom: "24px", marginTop: 0 }}>
-                  Access and download your commercial licenses, template files, and vectors instantly.
+                  Manage, filter, and retrieve your unlocked developer packages, resources, and ebooks.
                 </p>
-                {downloads.length === 0 ? (
-                  <Box py={6} style={{ textAlign: "center" }}>
-                    <p style={{ color: theme.palette.text.secondary }}>No digital licenses unlocked in your cabinet.</p>
+
+                {/* Filters Row */}
+                <Grid container spacing={4} alignItems="center" style={{ marginBottom: "24px" }}>
+                  <Grid item xs={12} sm={5}>
+                    <Input 
+                      placeholder="Search assets by title..." 
+                      value={dlSearch} 
+                      onChange={(e) => setDlSearch(e.target.value)} 
+                      fullWidth 
+                      leftIcon={<SearchIcon style={{ color: theme.palette.text.muted }} />}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Box display="flex" gap={2} flexWrap="wrap">
+                      {["All", "ZIP", "PDF", "Figma"].map(fmt => (
+                        <Chip 
+                          key={fmt} 
+                          label={fmt} 
+                          onClick={() => setDlFormatFilter(fmt)}
+                          color={dlFormatFilter === fmt ? "primary" : "neutral"}
+                          variant={dlFormatFilter === fmt ? "filled" : "outlined"}
+                          size="xs"
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Box display="flex" justifyContent="flex-end">
+                      <select 
+                        value={dlSortBy} 
+                        onChange={(e) => setDlSortBy(e.target.value)}
+                        style={{ 
+                          padding: "8px 12px", 
+                          borderRadius: theme.radius.sm, 
+                          border: `1px solid ${theme.palette.border.default}`,
+                          fontSize: "13px",
+                          fontFamily: theme.typography.fontFamily,
+                          outline: "none",
+                          backgroundColor: "#fff"
+                        }}
+                      >
+                        <option value="date_desc">Recent Purchases</option>
+                        <option value="title_asc">Title A-Z</option>
+                        <option value="downloads_desc">Popular Downloads</option>
+                      </select>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                <Divider style={{ marginBottom: "16px" }} />
+
+                {filteredDownloads.length === 0 ? (
+                  <Box py={10} style={{ textAlign: "center" }}>
+                    <p style={{ color: theme.palette.text.secondary, fontSize: "14px" }}>No items matching search conditions.</p>
                   </Box>
                 ) : (
                   <div>
-                    {downloads.map(file => (
-                      <FileRow key={file.id}>
-                        <Box display="flex" gap={4} alignItems="center">
-                          <img src={file.image} alt={file.title} style={{ width: "48px", height: "64px", objectFit: "cover", borderRadius: "4px" }} />
-                          <Box>
-                            <h4 style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "bold" }}>{file.title}</h4>
-                            <Box display="flex" gap={2} fontSize="11px" color={theme.palette.text.secondary}>
-                              <span>Format: {file.fileFormat}</span>
-                              <span>·</span>
-                              <span>Size: {file.fileSize}</span>
-                              <span>·</span>
-                              <span>Downloads: {file.downloadCount}</span>
-                            </Box>
-                          </Box>
-                        </Box>
+                    {filteredDownloads.map(file => {
+                      const curState = downloadStates[file.id] || "idle";
+                      const progress = downloadProgress[file.id] || 0;
+                      const err = downloadErrors[file.id];
+                      
+                      // Highlight updates for blueprint prod_6
+                      const hasUpdate = file.productId === "prod_6";
 
-                        <Button
-                          variant="secondary"
-                          state={downloadingId === file.id ? "loading" : "default"}
-                          leftIcon={<CloudDownloadIcon style={{ fontSize: "16px" }} />}
-                          onClick={() => handleTriggerDownload(file)}
-                        >
-                          Download ZIP
-                        </Button>
-                      </FileRow>
-                    ))}
+                      return (
+                        <Box key={file.id} style={{ borderBottom: `1px solid ${theme.palette.border.default}`, padding: "16px 0" }}>
+                          <FileRow>
+                            <Box display="flex" gap={4} alignItems="center">
+                              <img src={file.image} alt={file.title} style={{ width: "48px", height: "64px", objectFit: "cover", borderRadius: "4px" }} />
+                              <Box>
+                                <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+                                  <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "bold" }}>{file.title}</h4>
+                                  {hasUpdate && (
+                                    <Chip 
+                                      label="Update Available (v2.1.0)" 
+                                      color="warning" 
+                                      size="xs" 
+                                      leftIcon={<UpdateIcon style={{ fontSize: "12px" }} />}
+                                      style={{ fontWeight: "bold" }}
+                                    />
+                                  )}
+                                </Box>
+                                <Box display="flex" gap={2} fontSize="11px" color={theme.palette.text.secondary} mt={1}>
+                                  <span>Format: {file.format || "ZIP"}</span>
+                                  <span>·</span>
+                                  <span>Size: {file.fileSize || "158.2 MB"}</span>
+                                  <span>·</span>
+                                  <span>Downloaded: {file.downloadCount} times</span>
+                                </Box>
+                              </Box>
+                            </Box>
+
+                            <Box>
+                              {curState === "idle" && (
+                                <Button
+                                  variant="secondary"
+                                  leftIcon={<CloudDownloadIcon style={{ fontSize: "16px" }} />}
+                                  onClick={() => handleTriggerDownload(file)}
+                                >
+                                  Download File
+                                </Button>
+                              )}
+
+                              {curState === "checking" && (
+                                <Button variant="secondary" disabled>
+                                  <CircularProgress size={12} style={{ marginRight: "8px" }} /> Checking Locker...
+                                </Button>
+                              )}
+
+                              {curState === "preparing" && (
+                                <Button variant="secondary" disabled>
+                                  <CircularProgress size={12} style={{ marginRight: "8px" }} /> Securing Link...
+                                </Button>
+                              )}
+
+                              {curState === "ready" && (
+                                <Button variant="primary" disabled style={{ backgroundColor: theme.palette.status.success }}>
+                                  Ready
+                                </Button>
+                              )}
+
+                              {curState === "downloading" && (
+                                <Button variant="secondary" disabled>
+                                  Downloading {progress}%
+                                </Button>
+                              )}
+
+                              {curState === "complete" && (
+                                <Button variant="secondary" disabled style={{ color: theme.palette.status.success }}>
+                                  <CheckCircleIcon style={{ fontSize: "16px", marginRight: "6px" }} /> Downloaded
+                                </Button>
+                              )}
+
+                              {curState === "error" && (
+                                <Button
+                                  variant="primary"
+                                  style={{ backgroundColor: theme.palette.status.error }}
+                                  leftIcon={<RefreshIcon style={{ fontSize: "14px" }} />}
+                                  onClick={() => handleTriggerDownload(file)}
+                                >
+                                  Retry
+                                </Button>
+                              )}
+                            </Box>
+                          </FileRow>
+                          
+                          {err && (
+                            <Box display="flex" alignItems="center" gap={2} p={2} mt={2} style={{ backgroundColor: "#FEF2F2", color: theme.palette.status.error, borderRadius: "6px", fontSize: "11px" }}>
+                              <ErrorIcon style={{ fontSize: "14px" }} />
+                              <span>{err}</span>
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
                   </div>
                 )}
               </Card>
@@ -360,11 +618,16 @@ export const Account = () => {
                   <Grid container spacing={4}>
                     {wishlistItems.map(item => (
                       <Grid item xs={12} sm={6} md={3} key={item.id}>
-                        <Card padding={4} interactive border={true} onClick={() => navigate(`/products/${item.id}`)}>
-                          <img src={item.image} alt={item.title} style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />
-                          <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.title}</h4>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Card padding={4} interactive border={true} style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                          <Box onClick={() => navigate(`/products/${item.id}`)} style={{ cursor: "pointer" }}>
+                            <img src={item.image} alt={item.title} style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />
+                            <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.title}</h4>
                             <Price amount={item.price} size="sm" showDiscountBadge={false} />
+                          </Box>
+                          <Box display="flex" gap={2} mt={3}>
+                            <Button variant="primary" onClick={() => addItem(item)} style={{ flexGrow: 1, fontSize: "12px", padding: "8px" }}>
+                              Add to Cart
+                            </Button>
                             <IconButton 
                               aria-label="Remove item from wishlist" 
                               onClick={(e) => { e.stopPropagation(); toggleWishlist(item); }}
@@ -416,6 +679,94 @@ export const Account = () => {
                   ))}
                 </Grid>
               </Box>
+            )}
+
+            {/* TABS 5: Security */}
+            {activeTabIdx === 5 && (
+              <Grid container spacing={6}>
+                <Grid item xs={12} md={6}>
+                  <Card padding={6}>
+                    <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "bold" }}>Modify Password</h3>
+                    {passFeedback && (
+                      <Box p={3} mb={4} style={{ 
+                        backgroundColor: passFeedback.type === "success" ? "#ECFDF5" : "#FEF2F2", 
+                        color: passFeedback.type === "success" ? theme.palette.status.success : theme.palette.status.error, 
+                        borderRadius: "6px", 
+                        fontSize: "13px" 
+                      }}>
+                        {passFeedback.message}
+                      </Box>
+                    )}
+                    <form onSubmit={handleUpdatePassword}>
+                      <Box display="flex" flexDirection="column" gap={4}>
+                        <Input label="Current Password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required fullWidth />
+                        <Input label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required fullWidth />
+                        <Input label="Confirm New Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required fullWidth />
+                        <Button variant="primary" type="submit" state={passLoading ? "loading" : "default"}>
+                          Change Password
+                        </Button>
+                      </Box>
+                    </form>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Card padding={6}>
+                    <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "bold" }}>Account Sessions</h3>
+                    <Box display="flex" flexDirection="column" gap={3}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" p={3} style={{ backgroundColor: theme.palette.background.elevated, borderRadius: "8px" }}>
+                        <Box>
+                          <strong style={{ fontSize: "13px", display: "block" }}>Windows 11 · Chrome Browser</strong>
+                          <span style={{ fontSize: "11px", color: theme.palette.text.secondary }}>IP Address: 192.168.1.45 (Current Session)</span>
+                        </Box>
+                        <Chip label="Active" color="success" size="xs" />
+                      </Box>
+                    </Box>
+                  </Card>
+                </Grid>
+              </Grid>
+            )}
+
+            {/* TABS 6: Notifications */}
+            {activeTabIdx === 6 && (
+              <Card padding={6} style={{ maxWidth: "600px" }}>
+                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "bold" }}>Manage Preferences</h3>
+                {notifFeedback && (
+                  <Box p={3} mb={4} style={{ backgroundColor: "#ECFDF5", color: theme.palette.status.success, borderRadius: "6px", fontSize: "13px" }}>
+                    {notifFeedback.message}
+                  </Box>
+                )}
+                <form onSubmit={handleSaveNotifications}>
+                  <Box display="flex" flexDirection="column" gap={4}>
+                    <Box display="flex" alignItems="center" gap={3}>
+                      <input type="checkbox" checked={notifOrderUpdates} onChange={(e) => setNotifOrderUpdates(e.target.checked)} id="notif-orders" />
+                      <label htmlFor="notif-orders" style={{ fontSize: "14px", cursor: "pointer" }}>
+                        <strong>Email Shipping Receipts</strong>
+                        <span style={{ display: "block", fontSize: "12px", color: theme.palette.text.secondary }}>Receive invoice tracking details instantly.</span>
+                      </label>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={3}>
+                      <input type="checkbox" checked={notifProductVersions} onChange={(e) => setNotifProductVersions(e.target.checked)} id="notif-updates" />
+                      <label htmlFor="notif-updates" style={{ fontSize: "14px", cursor: "pointer" }}>
+                        <strong>Asset Updates Notifications</strong>
+                        <span style={{ display: "block", fontSize: "12px", color: theme.palette.text.secondary }}>Get notified when a new version or download file release becomes active.</span>
+                      </label>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={3}>
+                      <input type="checkbox" checked={notifPromos} onChange={(e) => setNotifPromos(e.target.checked)} id="notif-promos" />
+                      <label htmlFor="notif-promos" style={{ fontSize: "14px", cursor: "pointer" }}>
+                        <strong>Promotions & Discount Offers</strong>
+                        <span style={{ display: "block", fontSize: "12px", color: theme.palette.text.secondary }}>Opt-in for seasonal vouchers and organizer discount release codes.</span>
+                      </label>
+                    </Box>
+
+                    <Button variant="primary" type="submit" state={notifLoading ? "loading" : "default"}>
+                      Save Changes
+                    </Button>
+                  </Box>
+                </form>
+              </Card>
             )}
           </>
         )}
